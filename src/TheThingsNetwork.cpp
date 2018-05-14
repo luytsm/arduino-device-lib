@@ -92,13 +92,15 @@ const char personalize_accepted[] PROGMEM = "Personalize accepted. Status: ";
 const char join_accepted[] PROGMEM = "Join accepted. Status: ";
 const char successful_transmission[] PROGMEM = "Successful transmission";
 const char successful_transmission_received[] PROGMEM = "Successful transmission. Received ";
+const char successful_paused[] PROGMEM = "Successfully paused:  ";
 
-const char *const success_msg[] PROGMEM = {personalize_accepted, join_accepted, successful_transmission, successful_transmission_received};
+const char *const success_msg[] PROGMEM = {personalize_accepted, join_accepted, successful_transmission, successful_transmission_received, successful_paused};
 
 #define SCS_PERSONALIZE_ACCEPTED 0
 #define SCS_JOIN_ACCEPTED 1
 #define SCS_SUCCESSFUL_TRANSMISSION 2
 #define SCS_SUCCESSFUL_TRANSMISSION_RECEIVED 3
+#define SCS_SUCCESSFUL_PAUSED 4
 
 const char radio_prefix[] PROGMEM = "radio";
 const char radio_set[] PROGMEM = "set";
@@ -108,8 +110,9 @@ const char radio_get_prlen[] PROGMEM = "prlen";
 const char radio_get_crc[] PROGMEM = "crc";
 const char radio_get_cr[] PROGMEM = "cr";
 const char radio_get_sf[] PROGMEM = "sf";
+const char radio_set_pwr[] PROGMEM = "pwr";
 
-const char *const radio_table[] PROGMEM = {radio_prefix, radio_set, radio_get, radio_get_bw, radio_get_prlen, radio_get_crc, radio_get_cr, radio_get_sf};
+const char *const radio_table[] PROGMEM = {radio_prefix, radio_set, radio_get, radio_get_bw, radio_get_prlen, radio_get_crc, radio_get_cr, radio_get_sf, radio_set_pwr};
 
 #define RADIO_PREFIX 0
 #define RADIO_SET 1
@@ -119,6 +122,7 @@ const char *const radio_table[] PROGMEM = {radio_prefix, radio_set, radio_get, r
 #define RADIO_GET_CRC 5
 #define RADIO_GET_CR 6
 #define RADIO_GET_SF 7
+#define RADIO_SET_PWR 8
 
 const char sys_prefix[] PROGMEM = "sys";
 const char sys_sleep[] PROGMEM = "sleep";
@@ -1029,4 +1033,41 @@ uint8_t TheThingsNetwork::getLinkCheckMargin()
 {
   readResponse(MAC_TABLE, MAC_GET_SET_TABLE, MAC_MRGN, buffer, sizeof(buffer));
   return strtol(buffer, NULL, 10);
+}
+bool TheThingsNetwork::pause(){
+  clearReadBuffer();
+  debugPrint(SENDING);
+  sendCommand(MAC_TABLE, MAC_PREFIX, true);
+  sendCommand(MAC_TABLE, MAC_PAUSE, false);
+  modemStream->write(SEND_MSG);
+  readLine(buffer, sizeof(buffer));
+  if (buffer)
+  {
+    debugPrintMessage(SUCCESS_MESSAGE, SCS_SUCCESSFUL_PAUSED, buffer);
+    return true;
+  }
+  return false;
+}
+
+bool TheThingsNetwork::resume(){
+  clearReadBuffer();
+  debugPrint(SENDING);
+  sendCommand(MAC_TABLE, MAC_PREFIX, true);
+  sendCommand(MAC_TABLE, MAC_RESUME, false);
+  modemStream->write(SEND_MSG);
+  return waitForOk();
+}
+
+bool TheThingsNetwork::setTxPower(uint8_t db)
+{
+  
+  clearReadBuffer();
+  debugPrint(SENDING);
+  sendCommand(RADIO_TABLE, RADIO_PREFIX, true);
+  sendCommand(RADIO_TABLE, RADIO_SET, true);
+  sendCommand(RADIO_TABLE, RADIO_SET_PWR, true);
+  modemStream->write(db);
+  modemStream->write(SEND_MSG);
+  debugPrintLn(db);
+  return waitForOk();
 }

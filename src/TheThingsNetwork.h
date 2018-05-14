@@ -101,6 +101,9 @@ public:
   void linkCheck(uint16_t seconds);
   uint8_t getLinkCheckGateways();  
   uint8_t getLinkCheckMargin();
+  bool pause();
+  bool resume();
+  bool setTxPower(uint8_t db);
 };
 
 #endif
